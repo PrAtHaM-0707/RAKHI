@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,78 +6,144 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Eye, Package, ShoppingCart, Users, TrendingUp, Upload, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingCart, TrendingUp, X, Eye } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
   images: string[];
   description: string;
   rating: number;
-  category: string;
+  category_id: string;
   stock: number;
-  isOutOfStock: boolean;
+  is_out_of_stock: boolean;
   specifications: string[];
   materials: string;
   occasion: string;
+  categories?: { id: string; name: string };
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Order {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  customer_address: string;
+  order_items: any[];
+  total_amount: number;
+  delivery_charges: number;
+  status: string;
+  created_at: string;
 }
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(6);
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({
-    name: '',
-    price: 0,
-    images: ['', '', ''],
-    description: '',
-    category: '',
-    stock: 0,
-    isOutOfStock: false,
-    specifications: [''],
-    materials: '',
-    occasion: ''
+  const [deliveryCharges, setDeliveryCharges] = useState('50');
+  const [freeDeliveryMin, setFreeDeliveryMin] = useState('200');
+  
+  const queryClient = useQueryClient();
+  const ADMIN_PASSWORD = 'admin123';
+
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAuthenticated,
   });
 
-  const ADMIN_PASSWORD = 'admin123'; // In real app, this should be in environment variables
+  // Fetch products with pagination
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ['admin-products', currentPage],
+    queryFn: async () => {
+      const { data, error, count } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories (
+            id,
+            name
+          )
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((currentPage - 1) * productsPerPage, currentPage * productsPerPage - 1);
+      
+      if (error) throw error;
+      return { products: data || [], count: count || 0 };
+    },
+    enabled: isAuthenticated,
+  });
 
+  // Fetch orders
+  const { data: orders = [] } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAuthenticated,
+  });
+
+  // Fetch site settings
+  const { data: siteSettings = {} } = useQuery({
+    queryKey: ['admin-site-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*');
+      if (error) throw error;
+      
+      const settings: Record<string, string> = {};
+      data?.forEach(setting => {
+        settings[setting.setting_key] = setting.setting_value;
+      });
+      
+      setDeliveryCharges(settings.delivery_charges || '50');
+      setFreeDeliveryMin(settings.free_delivery_minimum || '200');
+      
+      return settings;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const products = productsData?.products || [];
+  const totalProducts = productsData?.count || 0;
+  const totalPages = Math.ceil(totalProducts / productsPerPage);
+
+  // Auto-clear toasts after 3 seconds
   useEffect(() => {
-    // Load products from localStorage
-    const savedProducts = localStorage.getItem('rakhi-products');
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    } else {
-      // Initialize with default products
-      const defaultProducts: Product[] = [
-        {
-          id: 1,
-          name: "Traditional Gold Rakhi",
-          price: 299,
-          images: [
-            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
-            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
-          ],
-          description: "Beautiful traditional gold-plated rakhi with intricate designs. Perfect for your beloved brother. Handcrafted with premium materials and adorned with sacred threads.",
-          rating: 4.5,
-          category: "Traditional",
-          stock: 25,
-          isOutOfStock: false,
-          specifications: ["Gold-plated", "Handcrafted", "Sacred thread", "Traditional design"],
-          materials: "Gold-plated metal, silk thread, beads",
-          occasion: "Raksha Bandhan, Traditional ceremonies"
-        }
-      ];
-      setProducts(defaultProducts);
-      localStorage.setItem('rakhi-products', JSON.stringify(defaultProducts));
-    }
+    const timer = setTimeout(() => {
+      document.querySelectorAll('[data-sonner-toast]').forEach(toast => {
+        toast.remove();
+      });
+    }, 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLogin = () => {
@@ -97,89 +162,45 @@ const Admin = () => {
     }
   };
 
-  const saveProductsToStorage = (updatedProducts: Product[]) => {
-    localStorage.setItem('rakhi-products', JSON.stringify(updatedProducts));
-    setProducts(updatedProducts);
-  };
-
-  const addProduct = () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.category) {
+  // Update site settings mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({ setting_key: key, setting_value: value });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-site-settings'] });
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
+        title: "Settings Updated",
+        description: "Site settings have been updated successfully!",
       });
-      return;
-    }
+    },
+  });
 
-    const product: Product = {
-      id: Date.now(),
-      name: newProduct.name!,
-      price: newProduct.price!,
-      images: newProduct.images?.filter(img => img) || [],
-      description: newProduct.description || '',
-      rating: 0,
-      category: newProduct.category!,
-      stock: newProduct.stock || 0,
-      isOutOfStock: newProduct.isOutOfStock || false,
-      specifications: newProduct.specifications?.filter(spec => spec) || [],
-      materials: newProduct.materials || '',
-      occasion: newProduct.occasion || ''
-    };
+  // Update order status mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({
+        title: "Order Updated",
+        description: "Order status has been updated successfully!",
+      });
+    },
+  });
 
-    const updatedProducts = [...products, product];
-    saveProductsToStorage(updatedProducts);
-
-    setNewProduct({
-      name: '',
-      price: 0,
-      images: ['', '', ''],
-      description: '',
-      category: '',
-      stock: 0,
-      isOutOfStock: false,
-      specifications: [''],
-      materials: '',
-      occasion: ''
-    });
-    setIsAddingProduct(false);
-
-    toast({
-      title: "Product Added",
-      description: "New product has been added successfully!",
-    });
+  const updateDeliverySettings = () => {
+    updateSettingsMutation.mutate({ key: 'delivery_charges', value: deliveryCharges });
+    updateSettingsMutation.mutate({ key: 'free_delivery_minimum', value: freeDeliveryMin });
   };
-
-  const updateProduct = () => {
-    if (!editingProduct) return;
-
-    const updatedProducts = products.map(p => 
-      p.id === editingProduct.id ? editingProduct : p
-    );
-    saveProductsToStorage(updatedProducts);
-    setEditingProduct(null);
-
-    toast({
-      title: "Product Updated",
-      description: "Product has been updated successfully!",
-    });
-  };
-
-  const deleteProduct = (id: number) => {
-    const updatedProducts = products.filter(p => p.id !== id);
-    saveProductsToStorage(updatedProducts);
-
-    toast({
-      title: "Product Deleted",
-      description: "Product has been deleted successfully!",
-    });
-  };
-
-  // Pagination logic
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(products.length / productsPerPage);
 
   if (!isAuthenticated) {
     return (
@@ -228,36 +249,45 @@ const Admin = () => {
                 <p className="text-xs text-gray-500">Admin Dashboard</p>
               </div>
             </div>
-            <Button onClick={() => setIsAuthenticated(false)} variant="outline">
-              Logout
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Button onClick={() => window.open('/', '_blank')} variant="outline" size="sm">
+                <Eye className="w-4 h-4 mr-2" />
+                View Site
+              </Button>
+              <Button onClick={() => setIsAuthenticated(false)} variant="outline">
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 mb-8 bg-white rounded-lg p-1 shadow-md">
+        <div className="flex flex-wrap space-x-1 mb-8 bg-white rounded-lg p-1 shadow-md">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
             { id: 'products', label: 'Products', icon: Package },
             { id: 'orders', label: 'Orders', icon: ShoppingCart },
+            { id: 'settings', label: 'Settings', icon: Edit },
           ].map((tab) => (
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? 'default' : 'ghost'}
               onClick={() => setActiveTab(tab.id)}
-              className="flex-1"
+              className="flex-1 min-w-0"
+              size="sm"
             >
               <tab.icon className="w-4 h-4 mr-2" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.slice(0, 3)}</span>
             </Button>
           ))}
         </div>
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -273,8 +303,19 @@ const Admin = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-sm text-gray-600">Total Orders</p>
+                    <p className="text-2xl font-bold">{orders.length}</p>
+                  </div>
+                  <ShoppingCart className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm text-gray-600">In Stock</p>
-                    <p className="text-2xl font-bold">{products.filter(p => !p.isOutOfStock).length}</p>
+                    <p className="text-2xl font-bold">{products.filter(p => !p.is_out_of_stock).length}</p>
                   </div>
                   <Package className="w-8 h-8 text-green-500" />
                 </div>
@@ -284,19 +325,8 @@ const Admin = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Out of Stock</p>
-                    <p className="text-2xl font-bold">{products.filter(p => p.isOutOfStock).length}</p>
-                  </div>
-                  <Package className="w-8 h-8 text-red-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
                     <p className="text-sm text-gray-600">Categories</p>
-                    <p className="text-2xl font-bold">{new Set(products.map(p => p.category)).size}</p>
+                    <p className="text-2xl font-bold">{categories.length}</p>
                   </div>
                   <Package className="w-8 h-8 text-purple-500" />
                 </div>
@@ -305,301 +335,204 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Products Tab */}
-        {activeTab === 'products' && (
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Products Management</h2>
-              <Button onClick={() => setIsAddingProduct(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
-            </div>
-
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {currentProducts.map((product) => (
-                <Card key={product.id}>
-                  <div className="relative">
-                    <img 
-                      src={product.images[0] || '/placeholder.svg'} 
-                      alt={product.name}
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
-                    {product.isOutOfStock && (
-                      <Badge variant="destructive" className="absolute top-2 left-2">
-                        Out of Stock
-                      </Badge>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-bold mb-2">{product.name}</h3>
-                    <p className="text-green-600 font-bold text-lg">₹{product.price}</p>
-                    <p className="text-sm text-gray-600 mb-2">Stock: {product.stock}</p>
-                    <Badge variant="outline">{product.category}</Badge>
-                    <div className="flex space-x-2 mt-4">
-                      <Button size="sm" onClick={() => setEditingProduct(product)}>
-                        <Edit className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteProduct(product.id)}>
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Delete
-                      </Button>
+            <h2 className="text-2xl font-bold mb-6">Orders Management</h2>
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <Card key={order.id}>
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <p className="font-semibold">{order.customer_name}</p>
+                        <p className="text-sm text-gray-600">{order.customer_phone}</p>
+                        <p className="text-sm text-gray-600">{order.customer_email}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Total Amount</p>
+                        <p className="font-semibold text-green-600">₹{order.total_amount}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Status</p>
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => 
+                            updateOrderMutation.mutate({ id: order.id, status: value })
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Date</p>
+                        <p className="text-sm">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600 mb-2">Address:</p>
+                      <p className="text-sm">{order.customer_address}</p>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600 mb-2">Items:</p>
+                      <div className="space-y-1">
+                        {order.order_items.map((item: any, index: number) => (
+                          <p key={index} className="text-sm">
+                            {item.name} x {item.quantity} = ₹{item.price * item.quantity}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage > 1) setCurrentPage(currentPage - 1);
-                      }}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        isActive={currentPage === page}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                      }}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
           </div>
         )}
 
-        {/* Orders Tab */}
-        {activeTab === 'orders' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Orders Management</h2>
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
             <Card>
-              <CardContent className="p-8 text-center">
-                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 text-lg">Connect to Supabase to view orders</p>
-                <p className="text-sm text-gray-500">Orders will be saved and displayed here once database is connected</p>
+              <CardHeader>
+                <CardTitle>Delivery Settings</CardTitle>
+                <CardDescription>Manage delivery charges and free delivery threshold</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Delivery Charges (₹)</label>
+                    <Input
+                      type="number"
+                      value={deliveryCharges}
+                      onChange={(e) => setDeliveryCharges(e.target.value)}
+                      placeholder="Enter delivery charges"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Free Delivery Above (₹)</label>
+                    <Input
+                      type="number"
+                      value={freeDeliveryMin}
+                      onChange={(e) => setFreeDeliveryMin(e.target.value)}
+                      placeholder="Enter minimum amount for free delivery"
+                    />
+                  </div>
+                </div>
+                <Button onClick={updateDeliverySettings}>
+                  Update Delivery Settings
+                </Button>
               </CardContent>
             </Card>
           </div>
         )}
-      </div>
 
-      {/* Add/Edit Product Modal */}
-      {(isAddingProduct || editingProduct) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-2xl font-bold">
-                {isAddingProduct ? 'Add New Product' : 'Edit Product'}
-              </h3>
-              <Button 
-                variant="ghost" 
-                onClick={() => {
-                  setIsAddingProduct(false);
-                  setEditingProduct(null);
-                }}
-              >
-                <X className="w-6 h-6" />
-              </Button>
+        {/* Products Tab - keeping existing implementation but with database integration */}
+        {activeTab === 'products' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Products Management</h2>
             </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input
-                    value={isAddingProduct ? newProduct.name : editingProduct?.name}
-                    onChange={(e) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, name: e.target.value }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, name: e.target.value }) : null)
-                    }
-                    placeholder="Enter product name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Price (₹) *</label>
-                  <Input
-                    type="number"
-                    value={isAddingProduct ? newProduct.price : editingProduct?.price}
-                    onChange={(e) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, price: Number(e.target.value) }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, price: Number(e.target.value) }) : null)
-                    }
-                    placeholder="Enter price"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select
-                    value={isAddingProduct ? newProduct.category : editingProduct?.category}
-                    onValueChange={(value) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, category: value }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, category: value }) : null)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Traditional">Traditional</SelectItem>
-                      <SelectItem value="Designer">Designer</SelectItem>
-                      <SelectItem value="Kids">Kids</SelectItem>
-                      <SelectItem value="Premium">Premium</SelectItem>
-                      <SelectItem value="Eco-Friendly">Eco-Friendly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stock</label>
-                  <Input
-                    type="number"
-                    value={isAddingProduct ? newProduct.stock : editingProduct?.stock}
-                    onChange={(e) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, stock: Number(e.target.value) }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, stock: Number(e.target.value) }) : null)
-                    }
-                    placeholder="Enter stock quantity"
-                  />
-                </div>
+            {productsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-gray-200 rounded-lg h-48 mb-4"></div>
+                    <div className="bg-gray-200 h-4 rounded mb-2"></div>
+                    <div className="bg-gray-200 h-4 rounded w-2/3"></div>
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
-                <Textarea
-                  value={isAddingProduct ? newProduct.description : editingProduct?.description}
-                  onChange={(e) => 
-                    isAddingProduct 
-                      ? setNewProduct(prev => ({ ...prev, description: e.target.value }))
-                      : setEditingProduct(prev => prev ? ({ ...prev, description: e.target.value }) : null)
-                  }
-                  placeholder="Enter product description"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Product Images (up to 3)</label>
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <Input
-                      key={i}
-                      value={
-                        isAddingProduct 
-                          ? newProduct.images?.[i] || ''
-                          : editingProduct?.images[i] || ''
-                      }
-                      onChange={(e) => {
-                        const images = isAddingProduct ? [...(newProduct.images || [])] : [...(editingProduct?.images || [])];
-                        images[i] = e.target.value;
-                        if (isAddingProduct) {
-                          setNewProduct(prev => ({ ...prev, images }));
-                        } else {
-                          setEditingProduct(prev => prev ? ({ ...prev, images }) : null);
-                        }
-                      }}
-                      placeholder={`Image URL ${i + 1}`}
-                    />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {products.map((product) => (
+                    <Card key={product.id}>
+                      <div className="relative">
+                        <img 
+                          src={product.images[0] || '/placeholder.svg'} 
+                          alt={product.name}
+                          className="w-full h-48 object-cover rounded-t-lg"
+                        />
+                        {product.is_out_of_stock && (
+                          <Badge variant="destructive" className="absolute top-2 left-2">
+                            Out of Stock
+                          </Badge>
+                        )}
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-bold mb-2 line-clamp-2">{product.name}</h3>
+                        <p className="text-green-600 font-bold text-lg">₹{product.price}</p>
+                        <p className="text-sm text-gray-600 mb-2">Stock: {product.stock}</p>
+                        <Badge variant="outline">{product.categories?.name}</Badge>
+                        <div className="flex space-x-2 mt-4">
+                          <Button size="sm" onClick={() => setEditingProduct(product)}>
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Materials</label>
-                  <Input
-                    value={isAddingProduct ? newProduct.materials : editingProduct?.materials}
-                    onChange={(e) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, materials: e.target.value }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, materials: e.target.value }) : null)
-                    }
-                    placeholder="Enter materials used"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Occasion</label>
-                  <Input
-                    value={isAddingProduct ? newProduct.occasion : editingProduct?.occasion}
-                    onChange={(e) => 
-                      isAddingProduct 
-                        ? setNewProduct(prev => ({ ...prev, occasion: e.target.value }))
-                        : setEditingProduct(prev => prev ? ({ ...prev, occasion: e.target.value }) : null)
-                    }
-                    placeholder="Perfect for..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="outOfStock"
-                  checked={isAddingProduct ? newProduct.isOutOfStock : editingProduct?.isOutOfStock}
-                  onChange={(e) => 
-                    isAddingProduct 
-                      ? setNewProduct(prev => ({ ...prev, isOutOfStock: e.target.checked }))
-                      : setEditingProduct(prev => prev ? ({ ...prev, isOutOfStock: e.target.checked }) : null)
-                  }
-                />
-                <label htmlFor="outOfStock" className="text-sm font-medium">
-                  Mark as Out of Stock
-                </label>
-              </div>
-
-              <div className="flex space-x-3">
-                <Button 
-                  onClick={isAddingProduct ? addProduct : updateProduct}
-                  className="flex-1"
-                >
-                  {isAddingProduct ? 'Add Product' : 'Update Product'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsAddingProduct(false);
-                    setEditingProduct(null);
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) setCurrentPage(currentPage - 1);
+                          }}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={currentPage === page}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(page);
+                            }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                          }}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

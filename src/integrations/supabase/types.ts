@@ -9,7 +9,196 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_address: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_charges: number | null
+          id: string
+          order_items: Json
+          status: string | null
+          total_amount: number
+          updated_at: string
+          whatsapp_sent: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          customer_address: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_charges?: number | null
+          id?: string
+          order_items: Json
+          status?: string | null
+          total_amount: number
+          updated_at?: string
+          whatsapp_sent?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          customer_address?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_charges?: number | null
+          id?: string
+          order_items?: Json
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          whatsapp_sent?: boolean | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          images: string[] | null
+          is_out_of_stock: boolean | null
+          materials: string | null
+          name: string
+          occasion: string | null
+          price: number
+          rating: number | null
+          specifications: string[] | null
+          stock: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_out_of_stock?: boolean | null
+          materials?: string | null
+          name: string
+          occasion?: string | null
+          price: number
+          rating?: number | null
+          specifications?: string[] | null
+          stock?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_out_of_stock?: boolean | null
+          materials?: string | null
+          name?: string
+          occasion?: string | null
+          price?: number
+          rating?: number | null
+          specifications?: string[] | null
+          stock?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          id: string
+          product_id: string | null
+          rating: number
+          review_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          id?: string
+          product_id?: string | null
+          rating: number
+          review_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          id?: string
+          product_id?: string | null
+          rating?: number
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
