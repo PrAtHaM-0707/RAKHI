@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Star, Phone, Mail, MessageCircle, X, Plus, Minus, Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { ShoppingCart, Star, Phone, Mail, MessageCircle, X, Plus, Minus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 interface Product {
   id: number;
@@ -35,123 +36,6 @@ interface CartItem extends Product {
   quantity: number;
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Traditional Gold Rakhi",
-    price: 299,
-    images: [
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
-    ],
-    description: "Beautiful traditional gold-plated rakhi with intricate designs. Perfect for your beloved brother. Handcrafted with premium materials and adorned with sacred threads.",
-    rating: 4.5,
-    reviews: [],
-    category: "Traditional",
-    stock: 25,
-    isOutOfStock: false,
-    specifications: ["Gold-plated", "Handcrafted", "Sacred thread", "Traditional design"],
-    materials: "Gold-plated metal, silk thread, beads",
-    occasion: "Raksha Bandhan, Traditional ceremonies"
-  },
-  {
-    id: 2,
-    name: "Designer Pearl Rakhi",
-    price: 399,
-    images: [
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
-    ],
-    description: "Elegant pearl rakhi with designer patterns. A symbol of pure love and protection. Features genuine pearls and intricate metalwork.",
-    rating: 4.8,
-    reviews: [],
-    category: "Designer",
-    stock: 15,
-    isOutOfStock: false,
-    specifications: ["Genuine pearls", "Designer pattern", "Premium finish", "Adjustable"],
-    materials: "Pearls, silver-plated metal, silk",
-    occasion: "Modern celebrations, Designer gifts"
-  },
-  {
-    id: 3,
-    name: "Kids Cartoon Rakhi",
-    price: 199,
-    images: [
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop"
-    ],
-    description: "Fun cartoon character rakhi specially designed for kids. Colorful and attractive with favorite cartoon characters that children love.",
-    rating: 4.3,
-    reviews: [],
-    category: "Kids",
-    stock: 30,
-    isOutOfStock: false,
-    specifications: ["Cartoon design", "Child-safe materials", "Bright colors", "Soft texture"],
-    materials: "Non-toxic plastic, cotton thread, fabric",
-    occasion: "Kids celebrations, Fun gifts"
-  },
-  {
-    id: 4,
-    name: "Silver Thread Rakhi",
-    price: 249,
-    images: [
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
-    ],
-    description: "Classic silver thread rakhi with traditional motifs. Timeless elegance that represents the eternal bond between siblings.",
-    rating: 4.6,
-    reviews: [],
-    category: "Traditional",
-    stock: 20,
-    isOutOfStock: false,
-    specifications: ["Silver thread", "Traditional motifs", "Durable", "Classic design"],
-    materials: "Silver thread, cotton, traditional beads",
-    occasion: "Traditional celebrations, Family gatherings"
-  },
-  {
-    id: 5,
-    name: "Premium Kundan Rakhi",
-    price: 599,
-    images: [
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
-    ],
-    description: "Luxurious kundan rakhi with precious stones. For the most special brother. Crafted with authentic kundan work and premium materials.",
-    rating: 4.9,
-    reviews: [],
-    category: "Premium",
-    stock: 10,
-    isOutOfStock: false,
-    specifications: ["Kundan work", "Precious stones", "Premium quality", "Luxury finish"],
-    materials: "Kundan stones, gold-plated base, silk thread",
-    occasion: "Special occasions, Premium gifts"
-  },
-  {
-    id: 6,
-    name: "Eco-Friendly Rakhi",
-    price: 149,
-    images: [
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop"
-    ],
-    description: "Environment-friendly rakhi made from natural materials. Show love for nature too. Biodegradable and sustainable.",
-    rating: 4.2,
-    reviews: [],
-    category: "Eco-Friendly",
-    stock: 40,
-    isOutOfStock: false,
-    specifications: ["Eco-friendly", "Biodegradable", "Natural materials", "Sustainable"],
-    materials: "Natural fibers, organic cotton, plant-based dyes",
-    occasion: "Eco-conscious celebrations, Nature lovers"
-  }
-];
-
 const Index = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -160,11 +44,141 @@ const Index = () => {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(0);
+  const [redirectInterval, setRedirectInterval] = useState<NodeJS.Timeout | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('default');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(6);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  // Load products from localStorage (synchronized with admin panel)
+  useEffect(() => {
+    const savedProducts = localStorage.getItem('rakhi-products');
+    if (savedProducts) {
+      setProducts(JSON.parse(savedProducts));
+    } else {
+      // Default products if none exist
+      const defaultProducts: Product[] = [
+        {
+          id: 1,
+          name: "Traditional Gold Rakhi",
+          price: 299,
+          images: [
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
+          ],
+          description: "Beautiful traditional gold-plated rakhi with intricate designs. Perfect for your beloved brother. Handcrafted with premium materials and adorned with sacred threads.",
+          rating: 4.5,
+          reviews: [],
+          category: "Traditional",
+          stock: 25,
+          isOutOfStock: false,
+          specifications: ["Gold-plated", "Handcrafted", "Sacred thread", "Traditional design"],
+          materials: "Gold-plated metal, silk thread, beads",
+          occasion: "Raksha Bandhan, Traditional ceremonies"
+        },
+        {
+          id: 2,
+          name: "Designer Pearl Rakhi",
+          price: 399,
+          images: [
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
+          ],
+          description: "Elegant pearl rakhi with designer patterns. A symbol of pure love and protection. Features genuine pearls and intricate metalwork.",
+          rating: 4.8,
+          reviews: [],
+          category: "Designer",
+          stock: 15,
+          isOutOfStock: false,
+          specifications: ["Genuine pearls", "Designer pattern", "Premium finish", "Adjustable"],
+          materials: "Pearls, silver-plated metal, silk",
+          occasion: "Modern celebrations, Designer gifts"
+        },
+        {
+          id: 3,
+          name: "Kids Cartoon Rakhi",
+          price: 199,
+          images: [
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop"
+          ],
+          description: "Fun cartoon character rakhi specially designed for kids. Colorful and attractive with favorite cartoon characters that children love.",
+          rating: 4.3,
+          reviews: [],
+          category: "Kids",
+          stock: 30,
+          isOutOfStock: false,
+          specifications: ["Cartoon design", "Child-safe materials", "Bright colors", "Soft texture"],
+          materials: "Non-toxic plastic, cotton thread, fabric",
+          occasion: "Kids celebrations, Fun gifts"
+        },
+        {
+          id: 4,
+          name: "Silver Thread Rakhi",
+          price: 249,
+          images: [
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
+          ],
+          description: "Classic silver thread rakhi with traditional motifs. Timeless elegance that represents the eternal bond between siblings.",
+          rating: 4.6,
+          reviews: [],
+          category: "Traditional",
+          stock: 20,
+          isOutOfStock: false,
+          specifications: ["Silver thread", "Traditional motifs", "Durable", "Classic design"],
+          materials: "Silver thread, cotton, traditional beads",
+          occasion: "Traditional celebrations, Family gatherings"
+        },
+        {
+          id: 5,
+          name: "Premium Kundan Rakhi",
+          price: 599,
+          images: [
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop"
+          ],
+          description: "Luxurious kundan rakhi with precious stones. For the most special brother. Crafted with authentic kundan work and premium materials.",
+          rating: 4.9,
+          reviews: [],
+          category: "Premium",
+          stock: 10,
+          isOutOfStock: false,
+          specifications: ["Kundan work", "Precious stones", "Premium quality", "Luxury finish"],
+          materials: "Kundan stones, gold-plated base, silk thread",
+          occasion: "Special occasions, Premium gifts"
+        },
+        {
+          id: 6,
+          name: "Eco-Friendly Rakhi",
+          price: 149,
+          images: [
+            "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
+            "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=400&h=400&fit=crop"
+          ],
+          description: "Environment-friendly rakhi made from natural materials. Show love for nature too. Biodegradable and sustainable.",
+          rating: 4.2,
+          reviews: [],
+          category: "Eco-Friendly",
+          stock: 40,
+          isOutOfStock: false,
+          specifications: ["Eco-friendly", "Biodegradable", "Natural materials", "Sustainable"],
+          materials: "Natural fibers, organic cotton, plant-based dyes",
+          occasion: "Eco-conscious celebrations, Nature lovers"
+        }
+      ];
+      setProducts(defaultProducts);
+    }
+  }, []);
 
   // Load reviews from localStorage on component mount
   useEffect(() => {
@@ -206,21 +220,32 @@ const Index = () => {
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory, sortBy, productReviews]);
+  }, [searchQuery, selectedCategory, sortBy, productReviews, products]);
+
+  // Pagination for products
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredAndSortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / productsPerPage);
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
+  const showToast = (title: string, description: string, variant?: "default" | "destructive") => {
+    toast({
+      title,
+      description,
+      variant,
+    });
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+      // Toast will auto-dismiss
+    }, 3000);
+  };
+
   const addToCart = (product: Product) => {
     if (product.isOutOfStock || product.stock === 0) {
-      toast({
-        title: "Out of Stock",
-        description: `${product.name} is currently out of stock`,
-        variant: "destructive"
-      });
-      
-      setTimeout(() => {
-        // This will be handled by the toast system
-      }, 3000);
+      showToast("Out of Stock", `${product.name} is currently out of stock`, "destructive");
       return;
     }
 
@@ -228,30 +253,17 @@ const Index = () => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
         if (existingItem.quantity >= product.stock) {
-          toast({
-            title: "Stock Limit Reached",
-            description: `Only ${product.stock} items available in stock`,
-            variant: "destructive"
-          });
-          setTimeout(() => {}, 3000);
+          showToast("Stock Limit Reached", `Only ${product.stock} items available in stock`, "destructive");
           return prevCart;
         }
-        toast({
-          title: "Updated Cart",
-          description: `Increased quantity of ${product.name}`,
-        });
-        setTimeout(() => {}, 3000);
+        showToast("Updated Cart", `Increased quantity of ${product.name}`);
         return prevCart.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        toast({
-          title: "Added to Cart",
-          description: `${product.name} has been added to your cart`,
-        });
-        setTimeout(() => {}, 3000);
+        showToast("Added to Cart", `${product.name} has been added to your cart`);
         return [...prevCart, { ...product, quantity: 1 }];
       }
     });
@@ -260,11 +272,7 @@ const Index = () => {
   const removeFromCart = (productId: number) => {
     const product = cart.find(item => item.id === productId);
     setCart(prevCart => prevCart.filter(item => item.id !== productId));
-    toast({
-      title: "Removed from Cart",
-      description: `${product?.name} has been removed from your cart`,
-    });
-    setTimeout(() => {}, 3000);
+    showToast("Removed from Cart", `${product?.name} has been removed from your cart`);
   };
 
   const updateQuantity = (productId: number, newQuantity: number) => {
@@ -275,12 +283,7 @@ const Index = () => {
     
     const product = products.find(p => p.id === productId);
     if (product && newQuantity > product.stock) {
-      toast({
-        title: "Stock Limit Reached",
-        description: `Only ${product.stock} items available in stock`,
-        variant: "destructive"
-      });
-      setTimeout(() => {}, 3000);
+      showToast("Stock Limit Reached", `Only ${product.stock} items available in stock`, "destructive");
       return;
     }
 
@@ -306,11 +309,7 @@ const Index = () => {
 
   const addReview = (productId: number) => {
     if (!newReview.comment.trim()) {
-      toast({
-        title: "Error",
-        description: "Please write a review comment",
-        variant: "destructive"
-      });
+      showToast("Error", "Please write a review comment", "destructive");
       return;
     }
 
@@ -327,10 +326,7 @@ const Index = () => {
     }));
 
     setNewReview({ rating: 5, comment: '' });
-    toast({
-      title: "Review Added",
-      description: "Thank you for your review!",
-    });
+    showToast("Review Added", "Thank you for your review!");
   };
 
   const getAverageRating = (productId: number) => {
@@ -341,26 +337,18 @@ const Index = () => {
 
   const handleBuyNow = () => {
     if (cart.length === 0) {
-      toast({
-        title: "Empty Cart",
-        description: "Please add items to cart before buying",
-        variant: "destructive"
-      });
-      setTimeout(() => {}, 3000);
+      showToast("Empty Cart", "Please add items to cart before buying", "destructive");
       return;
     }
 
     setRedirectCountdown(5);
-    toast({
-      title: "Redirecting to WhatsApp",
-      description: "You will be redirected to WhatsApp for order confirmation in 5 seconds",
-    });
+    showToast("Redirecting to WhatsApp", "You will be redirected to WhatsApp for order confirmation in 5 seconds");
 
     const interval = setInterval(() => {
       setRedirectCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          // Create WhatsApp message
+          // Create detailed WhatsApp message
           const orderDetails = cart.map(item => 
             `${item.name} x ${item.quantity} = ₹${item.price * item.quantity}`
           ).join('\n');
@@ -369,26 +357,41 @@ const Index = () => {
           const delivery = getDeliveryCharges();
           const finalTotal = total + delivery;
           
-          const message = `🎉 New Rakhi Order 🎉\n\n${orderDetails}\n\nSubtotal: ₹${total}\nDelivery: ₹${delivery}\nTotal: ₹${finalTotal}\n\nPlease confirm this order!`;
+          const message = `🎉 *New Rakhi Order* 🎉
+
+📋 *ORDER DETAILS:*
+${orderDetails}
+
+💰 *BILLING SUMMARY:*
+Subtotal: ₹${total}
+Delivery Charges: ${delivery === 0 ? 'FREE' : `₹${delivery}`}
+*Total Amount: ₹${finalTotal}*
+
+📞 Please confirm this order and provide delivery details.
+
+🙏 Thank you for choosing RakhiMart!`;
           
           const whatsappUrl = `https://wa.me/9123456789?text=${encodeURIComponent(message)}`;
           window.open(whatsappUrl, '_blank');
           
           setRedirectCountdown(0);
+          setRedirectInterval(null);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+    
+    setRedirectInterval(interval);
   };
 
   const cancelRedirect = () => {
+    if (redirectInterval) {
+      clearInterval(redirectInterval);
+      setRedirectInterval(null);
+    }
     setRedirectCountdown(0);
-    toast({
-      title: "Redirect Cancelled",
-      description: "WhatsApp redirect has been cancelled",
-    });
-    setTimeout(() => {}, 3000);
+    showToast("Redirect Cancelled", "WhatsApp redirect has been cancelled");
   };
 
   const StarRating = ({ rating, onRatingChange, readonly = true }: { rating: number, onRatingChange?: (rating: number) => void, readonly?: boolean }) => {
@@ -513,8 +516,8 @@ const Index = () => {
             <p className="text-gray-600">{filteredAndSortedProducts.length} products found</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredAndSortedProducts.map((product) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+            {currentProducts.map((product) => (
               <Card key={product.id} className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 bg-white/95 backdrop-blur-sm border-2 border-orange-100 hover:border-orange-300 overflow-hidden">
                 <div className="relative overflow-hidden">
                   <img 
@@ -579,6 +582,46 @@ const Index = () => {
               </Card>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination className="mt-8">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) setCurrentPage(currentPage - 1);
+                    }}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      isActive={currentPage === page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(page);
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
           
           {filteredAndSortedProducts.length === 0 && (
             <div className="text-center py-16">
