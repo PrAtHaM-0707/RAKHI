@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,7 +121,8 @@ const Admin = () => {
   // Transform orders data to ensure proper typing
   const orders: Order[] = ordersData.map(order => ({
     ...order,
-    order_items: Array.isArray(order.order_items) ? order.order_items as OrderItem[] : []
+    order_items: Array.isArray(order.order_items) ? 
+      (order.order_items as unknown as OrderItem[]) : []
   }));
 
   // Fetch site settings
