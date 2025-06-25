@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useCategories, useProducts, useSiteSettings } from '@/hooks/useLocalStorage';
+import { useCategories, useProducts, useSiteSettings, defaultSiteSettings } from '@/hooks/useLocalStorage';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import FilterSection from '@/components/FilterSection';
@@ -60,7 +61,10 @@ const Index = () => {
     productsPerPage, 
     selectedCategory
   );
-  const { data: siteSettings = {} } = useSiteSettings();
+  const { data: siteSettingsData, isLoading: settingsLoading } = useSiteSettings();
+  
+  // Provide default values to prevent TypeScript errors
+  const siteSettings = siteSettingsData || defaultSiteSettings;
 
   const products = productsData?.products || [];
   const totalProducts = productsData?.count || 0;
