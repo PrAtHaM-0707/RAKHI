@@ -18,7 +18,8 @@ import {
   Shield,
   ArrowRight,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCategories, useProducts, useSiteSettings } from '@/hooks/useSupabase';

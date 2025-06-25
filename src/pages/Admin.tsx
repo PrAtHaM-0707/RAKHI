@@ -33,13 +33,20 @@ interface Category {
   description: string;
 }
 
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface Order {
   id: string;
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
   customer_address: string;
-  order_items: any[];
+  order_items: OrderItem[];
   total_amount: number;
   delivery_charges: number;
   status: string;
@@ -97,7 +104,7 @@ const Admin = () => {
   });
 
   // Fetch orders
-  const { data: orders = [] } = useQuery({
+  const { data: ordersData = [] } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -109,6 +116,12 @@ const Admin = () => {
     },
     enabled: isAuthenticated,
   });
+
+  // Transform orders data to ensure proper typing
+  const orders: Order[] = ordersData.map(order => ({
+    ...order,
+    order_items: Array.isArray(order.order_items) ? order.order_items as OrderItem[] : []
+  }));
 
   // Fetch site settings
   const { data: siteSettings = {} } = useQuery({
@@ -388,7 +401,7 @@ const Admin = () => {
                     <div className="mt-4">
                       <p className="text-sm text-gray-600 mb-2">Items:</p>
                       <div className="space-y-1">
-                        {order.order_items.map((item: any, index: number) => (
+                        {order.order_items.map((item: OrderItem, index: number) => (
                           <p key={index} className="text-sm">
                             {item.name} x {item.quantity} = ₹{item.price * item.quantity}
                           </p>
