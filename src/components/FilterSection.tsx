@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,7 @@ import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface Category {
-  id: string;
+  _id: string; // Changed from id to _id
   name: string;
 }
 
@@ -39,7 +38,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   onSortChange,
   showOutOfStock,
   onShowOutOfStockChange,
-  onClearFilters
+  onClearFilters,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
   const [minPrice, setMinPrice] = React.useState(priceRange[0].toString());
@@ -55,7 +54,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
     selectedCategory !== 'All',
     priceRange[0] > 0 || priceRange[1] < 10000,
     sortBy !== 'default',
-    !showOutOfStock
+    !showOutOfStock,
   ].filter(Boolean).length;
 
   return (
@@ -112,7 +111,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
                   <SelectContent>
                     <SelectItem value="All">All Categories</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
+                      <SelectItem key={category._id} value={category._id}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -190,9 +189,9 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </Button>
         {categories.slice(0, 6).map((category) => (
           <Button
-            key={category.id}
-            variant={selectedCategory === category.name ? 'default' : 'outline'}
-            onClick={() => onCategoryChange(category.name)}
+            key={category._id}
+            variant={selectedCategory === category._id ? 'default' : 'outline'}
+            onClick={() => onCategoryChange(category._id)}
             size="sm"
             className="border-orange-200 hover:border-orange-400"
           >

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Minus, Plus, Trash2, ShoppingCart, ArrowLeft, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CartItem {
   id: string;
@@ -36,6 +45,9 @@ const Cart: React.FC<CartPageProps> = ({
     email: '',
     address: '',
   });
+  const [showConfirmation, setShowConfirmation] = React.useState(false);
+  const [countdown, setCountdown] = React.useState(5);
+  const countdownRef = React.useRef<NodeJS.Timeout>();
 
   const deliveryCharges = 50;
   const freeDeliveryMin = 200;
@@ -49,6 +61,97 @@ const Cart: React.FC<CartPageProps> = ({
     } else {
       onUpdateQuantity(id, newQuantity);
     }
+  };
+
+  const checkWhatsAppInstalled = () => {
+    // Check for Android
+    if (navigator.userAgent.match(/Android/i)) {
+      try {
+        // Try to open intent (works if WhatsApp is installed)
+        window.location.href = 'intent://send/';
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    // Check for iOS
+    if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+      try {
+        // Try to open custom URL scheme
+        window.location.href = 'whatsapp://send/';
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    // Default to web for desktop
+    return false;
+  };
+
+  const generateWhatsAppURL = () => {
+    const orderDetails = cartItems.map(item => 
+      `• ${item.name} x ${item.quantity} = ₹${item.price * item.quantity}`
+    ).join('\n');
+    
+    const whatsappMessage = `🛍️ *New Order from RakhiMart*\n\n` +
+      `*Customer Details:*\n` +
+      `Name: ${customerData.name}\n` +
+      `Phone: ${customerData.phone}\n` +
+      `Email: ${customerData.email || 'Not provided'}\n` +
+      `Address: ${customerData.address}\n\n` +
+      `*Order Items:*\n${orderDetails}\n\n` +
+      `*Order Summary:*\n` +
+      `Subtotal: ₹${subtotal}\n` +
+      `Delivery: ₹${finalDeliveryCharges}\n` +
+      `*Total: ₹${total}*\n\n` +
+      `Please confirm this order. Thank you!`;
+
+    const isWhatsAppInstalled = checkWhatsAppInstalled();
+    const phoneNumber = '919872130902';
+    
+    if (isWhatsAppInstalled) {
+      return `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(whatsappMessage)}`;
+    } else {
+      return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+    }
+  };
+
+  const startCountdown = () => {
+    setShowConfirmation(true);
+    setCountdown(5);
+    
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current);
+          redirectToWhatsApp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const cancelRedirect = () => {
+    clearInterval(countdownRef.current);
+    setShowConfirmation(false);
+  };
+
+  const redirectToWhatsApp = () => {
+    clearInterval(countdownRef.current);
+    setShowConfirmation(false);
+    
+    // Generate WhatsApp message
+    const whatsappURL = generateWhatsAppURL();
+    
+    // Clear cart and redirect to WhatsApp
+    onClearCart();
+    window.open(whatsappURL, '_blank');
+    
+    toast({
+      title: "Order Placed!",
+      description: "You've been redirected to WhatsApp for order confirmation.",
+    });
   };
 
   const handleBuyNow = () => {
@@ -70,34 +173,7 @@ const Cart: React.FC<CartPageProps> = ({
       return;
     }
 
-    // Generate WhatsApp message
-    const orderDetails = cartItems.map(item => 
-      `• ${item.name} x ${item.quantity} = ₹${item.price * item.quantity}`
-    ).join('\n');
-    
-    const whatsappMessage = `🛍️ *New Order from RakhiMart*\n\n` +
-      `*Customer Details:*\n` +
-      `Name: ${customerData.name}\n` +
-      `Phone: ${customerData.phone}\n` +
-      `Email: ${customerData.email || 'Not provided'}\n` +
-      `Address: ${customerData.address}\n\n` +
-      `*Order Items:*\n${orderDetails}\n\n` +
-      `*Order Summary:*\n` +
-      `Subtotal: ₹${subtotal}\n` +
-      `Delivery: ₹${finalDeliveryCharges}\n` +
-      `*Total: ₹${total}*\n\n` +
-      `Please confirm this order. Thank you! 🙏`;
-
-    const whatsappURL = `https://wa.me/917696400902?text=${encodeURIComponent(whatsappMessage)}`;
-    
-    // Clear cart and redirect to WhatsApp
-    onClearCart();
-    window.open(whatsappURL, '_blank');
-    
-    toast({
-      title: "Order Placed!",
-      description: "You'll be redirected to WhatsApp for order confirmation.",
-    });
+    startCountdown();
   };
 
   if (cartItems.length === 0) {
@@ -316,6 +392,29 @@ const Cart: React.FC<CartPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll be redirected to WhatsApp in {countdown} seconds for order confirmation.
+              <br /><br />
+              Please make sure all your details are correct before proceeding.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelRedirect}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={redirectToWhatsApp}
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            >
+              Proceed Now ({countdown})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

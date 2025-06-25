@@ -21,7 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useCategories, useProducts, useSiteSettings, defaultSiteSettings } from '@/hooks/useLocalStorage';
+import { useCategories, useProducts, useSiteSettings, defaultSiteSettings } from '@/hooks/useData';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import FilterSection from '@/components/FilterSection';
@@ -71,6 +71,13 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   const totalProducts = productsData?.count || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
+  // Map category _id to name for display
+  const getCategoryName = (categoryId: string) => {
+    if (categoryId === 'All') return 'All Categories';
+    const category = categories.find((cat) => cat._id === categoryId);
+    return category?.name || categoryId; // Fallback to _id if name not found
+  };
+
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
     toast({
@@ -118,7 +125,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
         filtered.sort((a, b) => a.price - b.price);
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => b.price - b.price);
         break;
       case 'rating':
         filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -257,7 +264,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
               <div className="mb-6 flex items-center justify-between">
                 <p className="text-gray-600">
                   Showing {filteredAndSortedProducts.length} of {totalProducts} products
-                  {selectedCategory !== 'All' && ` in "${selectedCategory}"`}
+                  {selectedCategory !== 'All' && ` in "${getCategoryName(selectedCategory)}"`}
                 </p>
                 
                 {filteredAndSortedProducts.length === 0 && (
@@ -349,8 +356,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
+     <footer className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
