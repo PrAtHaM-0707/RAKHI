@@ -21,11 +21,11 @@ import {
   X
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useCategories, useProducts, useSiteSettings } from '@/hooks/useSupabase';
+import { useCategories, useProducts, useSiteSettings } from '@/hooks/useLocalStorage';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import FilterSection from '@/components/FilterSection';
-import CheckoutModal from '@/components/CheckoutModal';
+import { useNavigate } from 'react-router-dom';
 
 interface CartItem {
   id: string;
@@ -36,11 +36,11 @@ interface CartItem {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -53,7 +53,7 @@ const Index = () => {
   
   const productsPerPage = 12;
 
-  // Fetch data from Supabase
+  // Fetch data from local storage
   const { data: categories = [] } = useCategories();
   const { data: productsData, isLoading: productsLoading } = useProducts(
     currentPage, 
@@ -66,13 +66,28 @@ const Index = () => {
   const totalProducts = productsData?.count || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
-  // Auto-clear toasts after 3 seconds
+  // Load cart from localStorage on component mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // This will be handled by the toast component itself
-    }, 3000);
-    return () => clearTimeout(timer);
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+    
+    const savedWishlist = localStorage.getItem('wishlist');
+    if (savedWishlist) {
+      setWishlist(JSON.parse(savedWishlist));
+    }
   }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // Save wishlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
 
   const addToCart = (product: any) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -114,6 +129,10 @@ const Index = () => {
         ? { ...item, quantity }
         : item
     ));
+  };
+
+  const clearCart = () => {
+    setCart([]);
   };
 
   const toggleWishlist = (product: any) => {
@@ -198,14 +217,6 @@ const Index = () => {
     setCurrentPage(1);
   };
 
-  const handleOrderSuccess = () => {
-    setCart([]);
-    toast({
-      title: "Order Placed Successfully!",
-      description: "Thank you for your order. We'll contact you soon for confirmation.",
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
       {/* Header */}
@@ -234,7 +245,7 @@ const Index = () => {
               
               <Button
                 variant="outline"
-                onClick={() => setIsCartOpen(!isCartOpen)}
+                onClick={() => navigate('/cart')}
                 className="relative hover:bg-orange-50 border-orange-200"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
@@ -453,100 +464,6 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Cart Sidebar */}
-      {isCartOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 md:bg-transparent">
-          <div className="fixed right-0 top-0 h-full w-full md:w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
-            <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-orange-500 to-red-500 text-white">
-              <h3 className="text-lg font-semibold">Shopping Cart</h3>
-              <Button variant="ghost" onClick={() => setIsCartOpen(false)} className="text-white hover:bg-white/20">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4" style={{ height: 'calc(100vh - 200px)' }}>
-              {cart.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">Your cart is empty</p>
-                  <p className="text-sm text-gray-400 mt-2">Add some products to get started!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                      <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded border" />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
-                        <p className="text-green-600 font-semibold">₹{item.price}</p>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                            className="h-6 w-6 p-0 border-orange-200"
-                          >
-                            -
-                          </Button>
-                          <span className="text-sm font-medium">{item.quantity}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                            className="h-6 w-6 p-0 border-orange-200"
-                          >
-                            +
-                          </Button>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {cart.length > 0 && (
-              <div className="p-4 border-t bg-gray-50">
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>₹{getTotalAmount()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Delivery:</span>
-                    <span className={getDeliveryCharges() === 0 ? 'text-green-600' : ''}>
-                      {getDeliveryCharges() === 0 ? 'FREE' : `₹${getDeliveryCharges()}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-2">
-                    <span>Total:</span>
-                    <span className="text-green-600">₹{getTotalAmount() + getDeliveryCharges()}</span>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => {
-                    setIsCartOpen(false);
-                    setIsCheckoutOpen(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg"
-                >
-                  Proceed to Checkout
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Product Details Modal */}
       <ProductModal
         product={selectedProduct}
@@ -558,16 +475,6 @@ const Index = () => {
         onAddToCart={addToCart}
         onToggleWishlist={toggleWishlist}
         isInWishlist={selectedProduct ? wishlist.includes(selectedProduct.id) : false}
-      />
-
-      {/* Checkout Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cartItems={cart}
-        totalAmount={getTotalAmount()}
-        deliveryCharges={getDeliveryCharges()}
-        onOrderSuccess={handleOrderSuccess}
       />
     </div>
   );
