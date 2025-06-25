@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +23,8 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { useCategories, useProducts, useSiteSettings } from '@/hooks/useSupabase';
 import ProductCard from '@/components/ProductCard';
+import ProductModal from '@/components/ProductModal';
+import FilterSection from '@/components/FilterSection';
 import CheckoutModal from '@/components/CheckoutModal';
 
 interface CartItem {
@@ -42,6 +43,13 @@ const Index = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  
+  // Filter states
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [sortBy, setSortBy] = useState('default');
+  const [showOutOfStock, setShowOutOfStock] = useState(true);
   
   const productsPerPage = 12;
 
@@ -126,6 +134,11 @@ const Index = () => {
     }
   };
 
+  const handleViewProduct = (product: any) => {
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
+  };
+
   const getTotalAmount = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
@@ -138,10 +151,52 @@ const Index = () => {
     return total >= freeDeliveryMin ? 0 : deliveryCharges;
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Apply filters and sorting
+  const filteredAndSortedProducts = React.useMemo(() => {
+    let filtered = products.filter(product => {
+      // Search filter
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Price filter
+      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+      
+      // Stock filter
+      const matchesStock = showOutOfStock || !product.is_out_of_stock;
+      
+      return matchesSearch && matchesPrice && matchesStock;
+    });
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'price-low':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'rating':
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        // Keep default order
+        break;
+    }
+
+    return filtered;
+  }, [products, searchQuery, priceRange, sortBy, showOutOfStock]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setPriceRange([0, 10000]);
+    setSortBy('default');
+    setShowOutOfStock(true);
+    setCurrentPage(1);
+  };
 
   const handleOrderSuccess = () => {
     setCart([]);
@@ -158,7 +213,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">R</span>
               </div>
               <div>
@@ -180,7 +235,7 @@ const Index = () => {
               <Button
                 variant="outline"
                 onClick={() => setIsCartOpen(!isCartOpen)}
-                className="relative"
+                className="relative hover:bg-orange-50 border-orange-200"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 <span className="hidden md:inline">Cart</span>
@@ -207,15 +262,15 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-8">
-            <div className="flex items-center space-x-2 text-green-600">
+            <div className="flex items-center space-x-2 text-green-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
               <Truck className="h-5 w-5" />
               <span className="text-sm md:text-base">Free delivery above ₹{siteSettings.free_delivery_minimum}</span>
             </div>
-            <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center space-x-2 text-blue-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
               <Shield className="h-5 w-5" />
               <span className="text-sm md:text-base">100% Quality Assured</span>
             </div>
-            <div className="flex items-center space-x-2 text-purple-600">
+            <div className="flex items-center space-x-2 text-purple-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
               <Award className="h-5 w-5" />
               <span className="text-sm md:text-base">Handcrafted with Love</span>
             </div>
@@ -223,47 +278,26 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Search and Filter Section */}
+      {/* Filter Section */}
       <section className="px-4 mb-8">
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search rakhis..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-orange-200 focus:border-orange-400"
-              />
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => {
-                  setSelectedCategory('All');
-                  setCurrentPage(1);
-                }}
-                size="sm"
-              >
-                All
-              </Button>
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.name ? 'default' : 'outline'}
-                  onClick={() => {
-                    setSelectedCategory(category.name);
-                    setCurrentPage(1);
-                  }}
-                  size="sm"
-                >
-                  {category.name}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <FilterSection
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory={selectedCategory}
+            onCategoryChange={(category) => {
+              setSelectedCategory(category);
+              setCurrentPage(1);
+            }}
+            categories={categories}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            showOutOfStock={showOutOfStock}
+            onShowOutOfStockChange={setShowOutOfStock}
+            onClearFilters={clearFilters}
+          />
         </div>
       </section>
 
@@ -282,17 +316,45 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onAddToCart={addToCart}
-                    onToggleWishlist={toggleWishlist}
-                    isInWishlist={wishlist.includes(product.id)}
-                  />
-                ))}
+              {/* Results Summary */}
+              <div className="mb-6 flex items-center justify-between">
+                <p className="text-gray-600">
+                  Showing {filteredAndSortedProducts.length} of {totalProducts} products
+                  {selectedCategory !== 'All' && ` in "${selectedCategory}"`}
+                </p>
+                
+                {filteredAndSortedProducts.length === 0 && (
+                  <Button onClick={clearFilters} variant="outline" size="sm">
+                    Clear Filters
+                  </Button>
+                )}
               </div>
+
+              {filteredAndSortedProducts.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Search className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">No products found</h3>
+                  <p className="text-gray-500 mb-4">Try adjusting your search or filter criteria</p>
+                  <Button onClick={clearFilters} variant="outline">
+                    Clear All Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {filteredAndSortedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onAddToCart={addToCart}
+                      onToggleWishlist={toggleWishlist}
+                      isInWishlist={wishlist.includes(product.id)}
+                      onViewDetails={handleViewProduct}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Pagination */}
               {totalPages > 1 && (
@@ -301,6 +363,7 @@ const Index = () => {
                     variant="outline"
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
+                    className="border-orange-200 hover:border-orange-400"
                   >
                     <ChevronLeft className="h-4 w-4 mr-2" />
                     Previous
@@ -325,6 +388,7 @@ const Index = () => {
                           variant={currentPage === pageNumber ? 'default' : 'outline'}
                           onClick={() => setCurrentPage(pageNumber)}
                           size="sm"
+                          className="border-orange-200 hover:border-orange-400"
                         >
                           {pageNumber}
                         </Button>
@@ -336,6 +400,7 @@ const Index = () => {
                     variant="outline"
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    className="border-orange-200 hover:border-orange-400"
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -392,9 +457,9 @@ const Index = () => {
       {isCartOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 md:bg-transparent">
           <div className="fixed right-0 top-0 h-full w-full md:w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
-            <div className="p-4 border-b flex justify-between items-center">
+            <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-orange-500 to-red-500 text-white">
               <h3 className="text-lg font-semibold">Shopping Cart</h3>
-              <Button variant="ghost" onClick={() => setIsCartOpen(false)}>
+              <Button variant="ghost" onClick={() => setIsCartOpen(false)} className="text-white hover:bg-white/20">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -404,30 +469,31 @@ const Index = () => {
                 <div className="text-center py-8">
                   <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-500">Your cart is empty</p>
+                  <p className="text-sm text-gray-400 mt-2">Add some products to get started!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                      <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                    <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded border" />
                       <div className="flex-1">
-                        <h4 className="font-medium text-sm">{item.name}</h4>
+                        <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
                         <p className="text-green-600 font-semibold">₹{item.price}</p>
                         <div className="flex items-center space-x-2 mt-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 border-orange-200"
                           >
                             -
                           </Button>
-                          <span className="text-sm">{item.quantity}</span>
+                          <span className="text-sm font-medium">{item.quantity}</span>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 border-orange-200"
                           >
                             +
                           </Button>
@@ -437,7 +503,7 @@ const Index = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -448,7 +514,7 @@ const Index = () => {
             </div>
             
             {cart.length > 0 && (
-              <div className="p-4 border-t">
+              <div className="p-4 border-t bg-gray-50">
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
@@ -456,9 +522,11 @@ const Index = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery:</span>
-                    <span>₹{getDeliveryCharges()}</span>
+                    <span className={getDeliveryCharges() === 0 ? 'text-green-600' : ''}>
+                      {getDeliveryCharges() === 0 ? 'FREE' : `₹${getDeliveryCharges()}`}
+                    </span>
                   </div>
-                  <div className="flex justify-between font-bold text-lg">
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
                     <span className="text-green-600">₹{getTotalAmount() + getDeliveryCharges()}</span>
                   </div>
@@ -468,7 +536,7 @@ const Index = () => {
                     setIsCartOpen(false);
                     setIsCheckoutOpen(true);
                   }}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg"
                 >
                   Proceed to Checkout
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -478,6 +546,19 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      {/* Product Details Modal */}
+      <ProductModal
+        product={selectedProduct}
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          setIsProductModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onAddToCart={addToCart}
+        onToggleWishlist={toggleWishlist}
+        isInWishlist={selectedProduct ? wishlist.includes(selectedProduct.id) : false}
+      />
 
       {/* Checkout Modal */}
       <CheckoutModal

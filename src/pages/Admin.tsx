@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, ShoppingCart, TrendingUp, X, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingCart, TrendingUp, X, Eye, Tags } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import AdminProductForm from '@/components/AdminProductForm';
+import CategoryManager from '@/components/CategoryManager';
 
 interface Product {
   id: string;
@@ -58,7 +59,7 @@ const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(6);
@@ -217,6 +218,121 @@ const Admin = () => {
     updateSettingsMutation.mutate({ key: 'free_delivery_minimum', value: freeDeliveryMin });
   };
 
+  // Add product mutation
+  const addProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      const { error } = await supabase
+        .from('products')
+        .insert([productData]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      setIsAddingProduct(false);
+      toast({
+        title: "Product Added",
+        description: "New product has been added successfully!",
+      });
+    },
+  });
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from('products')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      setEditingProduct(null);
+      toast({
+        title: "Product Updated",
+        description: "Product has been updated successfully!",
+      });
+    },
+  });
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast({
+        title: "Product Deleted",
+        description: "Product has been deleted successfully!",
+      });
+    },
+  });
+
+  // Category mutations
+  const addCategoryMutation = useMutation({
+    mutationFn: async (categoryData: { name: string; description: string }) => {
+      const { error } = await supabase
+        .from('categories')
+        .insert([categoryData]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name: string; description: string } }) => {
+      const { error } = await supabase
+        .from('categories')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+
+  const handleSaveProduct = (productData: any) => {
+    if (editingProduct) {
+      updateProductMutation.mutate({ id: editingProduct.id, data: productData });
+    } else {
+      addProductMutation.mutate(productData);
+    }
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      deleteProductMutation.mutate(id);
+    }
+  };
+
+  const toggleProductStock = (product: any) => {
+    updateProductMutation.mutate({
+      id: product.id,
+      data: { ...product, is_out_of_stock: !product.is_out_of_stock }
+    });
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
@@ -278,11 +394,12 @@ const Admin = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Navigation Tabs */}
+        {/* Enhanced Navigation Tabs */}
         <div className="flex flex-wrap space-x-1 mb-8 bg-white rounded-lg p-1 shadow-md">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
             { id: 'products', label: 'Products', icon: Package },
+            { id: 'categories', label: 'Categories', icon: Tags },
             { id: 'orders', label: 'Orders', icon: ShoppingCart },
             { id: 'settings', label: 'Settings', icon: Edit },
           ].map((tab) => (
@@ -454,11 +571,18 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Products Tab - keeping existing implementation but with database integration */}
+        {/* Enhanced Products Tab */}
         {activeTab === 'products' && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Products Management</h2>
+              <Button
+                onClick={() => setIsAddingProduct(true)}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
             </div>
 
             {productsLoading ? (
@@ -475,34 +599,63 @@ const Admin = () => {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {products.map((product) => (
-                    <Card key={product.id}>
+                    <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="relative">
                         <img 
                           src={product.images[0] || '/placeholder.svg'} 
                           alt={product.name}
-                          className="w-full h-48 object-cover rounded-t-lg"
+                          className="w-full h-48 object-cover"
                         />
                         {product.is_out_of_stock && (
                           <Badge variant="destructive" className="absolute top-2 left-2">
                             Out of Stock
                           </Badge>
                         )}
+                        <div className="absolute top-2 right-2 flex space-x-1">
+                          {product.images.slice(1, 3).map((img, idx) => (
+                            <div key={idx} className="w-6 h-6 rounded border bg-white/80">
+                              <img src={img} alt="" className="w-full h-full object-cover rounded" />
+                            </div>
+                          ))}
+                          {product.images.length > 3 && (
+                            <div className="w-6 h-6 rounded border bg-white/80 flex items-center justify-center text-xs">
+                              +{product.images.length - 3}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-bold mb-2 line-clamp-2">{product.name}</h3>
-                        <p className="text-green-600 font-bold text-lg">₹{product.price}</p>
-                        <p className="text-sm text-gray-600 mb-2">Stock: {product.stock}</p>
-                        <Badge variant="outline">{product.categories?.name}</Badge>
-                        <div className="flex space-x-2 mt-4">
+                        <p className="text-green-600 font-bold text-lg mb-2">₹{product.price}</p>
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge variant="outline">{product.categories?.name}</Badge>
+                          <span className="text-sm text-gray-600">Stock: {product.stock}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                           <Button size="sm" onClick={() => setEditingProduct(product)}>
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
                           </Button>
+                          <Button 
+                            size="sm" 
+                            variant={product.is_out_of_stock ? "default" : "outline"}
+                            onClick={() => toggleProductStock(product)}
+                          >
+                            {product.is_out_of_stock ? 'In Stock' : 'Out of Stock'}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
@@ -547,7 +700,34 @@ const Admin = () => {
             )}
           </div>
         )}
-      </div>
+
+        {/* Categories Tab */}
+        {activeTab === 'categories' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Categories Management</h2>
+            <CategoryManager
+              categories={categories}
+              onAddCategory={(category) => addCategoryMutation.mutate(category)}
+              onUpdateCategory={(id, category) => updateCategoryMutation.mutate({ id, data: category })}
+              onDeleteCategory={(id) => deleteCategoryMutation.mutate(id)}
+            />
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        
+
+      {/* Product Form Modal */}
+      <AdminProductForm
+        product={editingProduct}
+        isOpen={isAddingProduct || !!editingProduct}
+        onClose={() => {
+          setIsAddingProduct(false);
+          setEditingProduct(null);
+        }}
+        onSave={handleSaveProduct}
+        categories={categories}
+      />
     </div>
   );
 };
