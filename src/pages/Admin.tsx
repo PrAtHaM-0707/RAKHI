@@ -652,10 +652,10 @@ const Admin = () => {
                             Delete
                           </Button>
                         </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
@@ -713,9 +713,7 @@ const Admin = () => {
             />
           </div>
         )}
-
-        {/* Settings Tab */}
-        
+      </div>
 
       {/* Product Form Modal */}
       <AdminProductForm
