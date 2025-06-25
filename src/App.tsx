@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Cart from "./pages/Cart";
 import NotFound from "./pages/NotFound";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -22,28 +22,66 @@ interface CartItem {
 
 const App = () => {
   // Global cart state management
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
     const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+    if (savedCart) {
+      try {
+        setCartItems(JSON.parse(savedCart));
+      } catch (error) {
+        console.error('Error loading cart from localStorage:', error);
+        setCartItems([]);
+      }
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  const addToCart = (product: any) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        return prevItems.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevItems, {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          images: product.images
+        }];
+      }
+    });
+  };
 
   const updateCartQuantity = (id: string, quantity: number) => {
-    const updatedCart = cartItems.map(item => 
-      item.id === id ? { ...item, quantity } : item
-    );
-    setCartItems(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    if (quantity === 0) {
+      setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+    } else {
+      setCartItems(prevItems => 
+        prevItems.map(item => 
+          item.id === id ? { ...item, quantity } : item
+        )
+      );
+    }
   };
 
   const removeCartItem = (id: string) => {
-    const updatedCart = cartItems.filter(item => item.id !== id);
-    setCartItems(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    setCartItems(prevItems => prevItems.filter(item => item.id !== id));
   };
 
   const clearCart = () => {
     setCartItems([]);
-    localStorage.setItem('cart', JSON.stringify([]));
   };
 
   return (
@@ -53,7 +91,15 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route 
+              path="/" 
+              element={
+                <Index 
+                  cartItems={cartItems}
+                  onAddToCart={addToCart}
+                />
+              } 
+            />
             <Route 
               path="/cart" 
               element={

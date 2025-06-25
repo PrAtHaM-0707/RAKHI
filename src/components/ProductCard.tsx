@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Heart, ShoppingCart, Eye, Zap } from 'lucide-react';
+import { Star, ShoppingCart, Eye } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -28,8 +28,6 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
   onAddToCart, 
-  onToggleWishlist, 
-  isInWishlist,
   onViewDetails
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
@@ -120,18 +118,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             size="sm"
-            variant={isInWishlist ? "default" : "secondary"}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleWishlist(product);
-            }}
-            className="h-8 w-8 p-0 rounded-full bg-white/90 backdrop-blur-sm border-orange-200 hover:bg-orange-50"
-          >
-            <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-          </Button>
-          
-          <Button
-            size="sm"
             variant="secondary"
             onClick={(e) => {
               e.stopPropagation();
@@ -197,7 +183,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         
         {/* Quick Actions */}
-        <div className="flex items-center justify-between pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="flex items-center justify-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             variant="ghost"
             size="sm"
@@ -209,22 +195,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
           >
             View Details →
           </Button>
-          
-          {!product.is_out_of_stock && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCart(product);
-                onToggleWishlist(product);
-              }}
-              className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto flex items-center"
-            >
-              <Zap className="h-3 w-3 mr-1" />
-              Quick Buy
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

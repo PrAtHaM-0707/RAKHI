@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,14 +35,16 @@ interface CartItem {
   images: string[];
 }
 
-const Index = () => {
+interface IndexProps {
+  cartItems: CartItem[];
+  onAddToCart: (product: any) => void;
+}
+
+const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   const navigate = useNavigate();
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   
@@ -70,91 +71,12 @@ const Index = () => {
   const totalProducts = productsData?.count || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
-  // Load cart from localStorage on component mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    }
-    
-    const savedWishlist = localStorage.getItem('wishlist');
-    if (savedWishlist) {
-      setWishlist(JSON.parse(savedWishlist));
-    }
-  }, []);
-
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  // Save wishlist to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-
-  const addToCart = (product: any) => {
-    const existingItem = cart.find(item => item.id === product.id);
-    
-    if (existingItem) {
-      setCart(cart.map(item => 
-        item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        quantity: 1,
-        images: product.images
-      }]);
-    }
-    
+  const handleAddToCart = (product: any) => {
+    onAddToCart(product);
     toast({
       title: "Added to Cart!",
       description: `${product.name} has been added to your cart.`,
     });
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity === 0) {
-      removeFromCart(productId);
-      return;
-    }
-    
-    setCart(cart.map(item => 
-      item.id === productId 
-        ? { ...item, quantity }
-        : item
-    ));
-  };
-
-  const clearCart = () => {
-    setCart([]);
-  };
-
-  const toggleWishlist = (product: any) => {
-    const isInWishlist = wishlist.includes(product.id);
-    
-    if (isInWishlist) {
-      setWishlist(wishlist.filter(id => id !== product.id));
-      toast({
-        title: "Removed from Wishlist",
-        description: `${product.name} has been removed from your wishlist.`,
-      });
-    } else {
-      setWishlist([...wishlist, product.id]);
-      toast({
-        title: "Added to Wishlist!",
-        description: `${product.name} has been added to your wishlist.`,
-      });
-    }
   };
 
   const handleViewProduct = (product: any) => {
@@ -163,7 +85,7 @@ const Index = () => {
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const getDeliveryCharges = () => {
@@ -254,9 +176,9 @@ const Index = () => {
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 <span className="hidden md:inline">Cart</span>
-                {cart.length > 0 && (
+                {cartItems.length > 0 && (
                   <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-red-500">
-                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                    {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
                   </Badge>
                 )}
               </Button>
@@ -362,9 +284,9 @@ const Index = () => {
                     <ProductCard
                       key={product.id}
                       product={product}
-                      onAddToCart={addToCart}
-                      onToggleWishlist={toggleWishlist}
-                      isInWishlist={wishlist.includes(product.id)}
+                      onAddToCart={handleAddToCart}
+                      onToggleWishlist={() => {}} // Removed wishlist functionality
+                      isInWishlist={false} // Always false since wishlist is removed
                       onViewDetails={handleViewProduct}
                     />
                   ))}
@@ -476,9 +398,9 @@ const Index = () => {
           setIsProductModalOpen(false);
           setSelectedProduct(null);
         }}
-        onAddToCart={addToCart}
-        onToggleWishlist={toggleWishlist}
-        isInWishlist={selectedProduct ? wishlist.includes(selectedProduct.id) : false}
+        onAddToCart={handleAddToCart}
+        onToggleWishlist={() => {}} // Removed wishlist functionality
+        isInWishlist={false} // Always false since wishlist is removed
       />
     </div>
   );

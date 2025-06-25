@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Heart, ShoppingCart, X } from 'lucide-react';
+import { Star, ShoppingCart } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -33,9 +33,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   product,
   isOpen,
   onClose,
-  onAddToCart,
-  onToggleWishlist,
-  isInWishlist
+  onAddToCart
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
@@ -134,22 +132,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             )}
             
-            <div className="flex space-x-3 pt-4">
+            <div className="flex pt-4">
               <Button
                 onClick={() => onAddToCart(product)}
                 disabled={product.is_out_of_stock || product.stock === 0}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Add to Cart
-              </Button>
-              
-              <Button
-                variant={isInWishlist ? "default" : "outline"}
-                onClick={() => onToggleWishlist(product)}
-                className="px-4"
-              >
-                <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : ''}`} />
               </Button>
             </div>
           </div>
