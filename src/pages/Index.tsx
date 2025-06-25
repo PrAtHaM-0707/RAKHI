@@ -1,24 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Heart, 
   ShoppingCart, 
   Search, 
-  Filter, 
   Star, 
   Phone, 
-  Mail, 
-  MapPin,
-  Award,
+  Mail,
   Truck,
   Shield,
-  ArrowRight,
+  Award,
   ChevronLeft,
   ChevronRight,
-  X
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCategories, useProducts, useSiteSettings, defaultSiteSettings } from '@/hooks/useData';
@@ -55,27 +50,24 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   
   const productsPerPage = 12;
 
-  // Fetch data from local storage
+  // Fetch data
   const { data: categories = [] } = useCategories();
   const { data: productsData, isLoading: productsLoading } = useProducts(
     currentPage, 
     productsPerPage, 
     selectedCategory
   );
-  const { data: siteSettingsData, isLoading: settingsLoading } = useSiteSettings();
+  const { data: siteSettingsData } = useSiteSettings();
   
-  // Provide default values to prevent TypeScript errors
   const siteSettings = siteSettingsData || defaultSiteSettings;
-
   const products = productsData?.products || [];
   const totalProducts = productsData?.count || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
-  // Map category _id to name for display
   const getCategoryName = (categoryId: string) => {
     if (categoryId === 'All') return 'All Categories';
     const category = categories.find((cat) => cat._id === categoryId);
-    return category?.name || categoryId; // Fallback to _id if name not found
+    return category?.name || categoryId;
   };
 
   const handleAddToCart = (product: any) => {
@@ -91,51 +83,21 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
     setIsProductModalOpen(true);
   };
 
-  const getTotalAmount = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const getDeliveryCharges = () => {
-    const total = getTotalAmount();
-    const freeDeliveryMin = parseInt(siteSettings.free_delivery_minimum || '200');
-    const deliveryCharges = parseInt(siteSettings.delivery_charges || '50');
-    
-    return total >= freeDeliveryMin ? 0 : deliveryCharges;
-  };
-
-  // Apply filters and sorting
   const filteredAndSortedProducts = React.useMemo(() => {
     let filtered = products.filter(product => {
-      // Search filter
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Price filter
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-      
-      // Stock filter
       const matchesStock = showOutOfStock || !product.is_out_of_stock;
-      
       return matchesSearch && matchesPrice && matchesStock;
     });
 
-    // Apply sorting
     switch (sortBy) {
-      case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        filtered.sort((a, b) => b.price - b.price);
-        break;
-      case 'rating':
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'name':
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      default:
-        // Keep default order
-        break;
+      case 'price-low': filtered.sort((a, b) => a.price - b.price); break;
+      case 'price-high': filtered.sort((a, b) => b.price - a.price); break;
+      case 'rating': filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0)); break;
+      case 'name': filtered.sort((a, b) => a.name.localeCompare(b.name)); break;
+      default: break;
     }
 
     return filtered;
@@ -152,47 +114,44 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
-      {/* Header */}
-      <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b-2 border-orange-200 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">R</span>
+      {/* Responsive Header */}
+      <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b-2 border-orange-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          {/* Top Row */}
+            <div className="flex items-center justify-between py-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg md:text-xl">R</span>
+                </div>
+                <div>
+                  <h1 className="text-lg md:text-xl600 font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    {siteSettings.site_title || 'RakhiMart'}
+                  </h1>
+                  <p className="text-xs text-gray-500 hidden md:block">
+                    {siteSettings.site_description}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  {siteSettings.site_title || 'RakhiMart'}
-                </h1>
-                <p className="text-xs text-gray-500 hidden md:block">
-                  {siteSettings.site_description}
-                </p>
+
+              {/* Cart Icon */}
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/cart')}
+                  className="relative hover:bg-orange-50 border-orange-200 p-2 md:px-4"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {cartItems.length > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-red-500">
+                      {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+                    </Badge>
+                  )}
+                  <span className="sr-only">Cart</span>
+                </Button>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm">
-                <Phone className="h-4 w-4 text-orange-600" />
-                <span className="hidden md:inline">{siteSettings.contact_phone}</span>
-              </div>
-              
-              <Button
-                variant="outline"
-                onClick={() => navigate('/cart')}
-                className="relative hover:bg-orange-50 border-orange-200"
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                <span className="hidden md:inline">Cart</span>
-                {cartItems.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-red-500">
-                    {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                  </Badge>
-                )}
-              </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 px-4 text-center">
@@ -260,7 +219,6 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
             </div>
           ) : (
             <>
-              {/* Results Summary */}
               <div className="mb-6 flex items-center justify-between">
                 <p className="text-gray-600">
                   Showing {filteredAndSortedProducts.length} of {totalProducts} products
@@ -292,15 +250,14 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
                       key={product.id}
                       product={product}
                       onAddToCart={handleAddToCart}
-                      onToggleWishlist={() => {}} // Removed wishlist functionality
-                      isInWishlist={false} // Always false since wishlist is removed
+                      onToggleWishlist={() => {}}
+                      isInWishlist={false}
                       onViewDetails={handleViewProduct}
                     />
                   ))}
                 </div>
               )}
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center space-x-2">
                   <Button
@@ -316,15 +273,10 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
                   <div className="flex space-x-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
+                      if (totalPages <= 5) pageNumber = i + 1;
+                      else if (currentPage <= 3) pageNumber = i + 1;
+                      else if (currentPage >= totalPages - 2) pageNumber = totalPages - 4 + i;
+                      else pageNumber = currentPage - 2 + i;
                       
                       return (
                         <Button
@@ -356,7 +308,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
         </div>
       </section>
 
-     <footer className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
+      <footer className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -396,7 +348,6 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
         </div>
       </footer>
 
-      {/* Product Details Modal */}
       <ProductModal
         product={selectedProduct}
         isOpen={isProductModalOpen}
@@ -405,8 +356,8 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
           setSelectedProduct(null);
         }}
         onAddToCart={handleAddToCart}
-        onToggleWishlist={() => {}} // Removed wishlist functionality
-        isInWishlist={false} // Always false since wishlist is removed
+        onToggleWishlist={() => {}}
+        isInWishlist={false}
       />
     </div>
   );

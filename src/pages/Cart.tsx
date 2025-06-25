@@ -64,27 +64,22 @@ const Cart: React.FC<CartPageProps> = ({
   };
 
   const checkWhatsAppInstalled = () => {
-    // Check for Android
     if (navigator.userAgent.match(/Android/i)) {
       try {
-        // Try to open intent (works if WhatsApp is installed)
         window.location.href = 'intent://send/';
         return true;
       } catch (e) {
         return false;
       }
     }
-    // Check for iOS
     if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
       try {
-        // Try to open custom URL scheme
         window.location.href = 'whatsapp://send/';
         return true;
       } catch (e) {
         return false;
       }
     }
-    // Default to web for desktop
     return false;
   };
 
@@ -141,10 +136,7 @@ const Cart: React.FC<CartPageProps> = ({
     clearInterval(countdownRef.current);
     setShowConfirmation(false);
     
-    // Generate WhatsApp message
     const whatsappURL = generateWhatsAppURL();
-    
-    // Clear cart and redirect to WhatsApp
     onClearCart();
     window.open(whatsappURL, '_blank');
     
@@ -176,7 +168,7 @@ const Cart: React.FC<CartPageProps> = ({
     startCountdown();
   };
 
-  if (cartItems.length === 0) {
+   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 py-8">
         <div className="container mx-auto px-4">
@@ -187,16 +179,16 @@ const Cart: React.FC<CartPageProps> = ({
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Shop
+              <span className="hidden sm:inline">Back to Shop</span>
             </Button>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
               Shopping Cart
             </h1>
           </div>
 
           <div className="text-center py-16">
-            <ShoppingCart className="h-24 w-24 mx-auto text-gray-400 mb-6" />
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Your cart is empty</h2>
+            <ShoppingCart className="h-20 w-20 sm:h-24 sm:w-24 mx-auto text-gray-400 mb-6" />
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-4">Your cart is empty</h2>
             <p className="text-gray-500 mb-6">Add some beautiful rakhis to get started!</p>
             <Button 
               onClick={() => navigate('/')}
@@ -220,75 +212,91 @@ const Cart: React.FC<CartPageProps> = ({
             className="mr-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Shop
+            <span className="hidden sm:inline">Back to Shop</span>
           </Button>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
             Shopping Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Items</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Your Items</CardTitle>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={onClearCart}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 text-sm"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear Cart
+                  <Trash2 className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Clear Cart</span>
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-2 sm:p-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <img 
-                      src={item.images[0]} 
-                      alt={item.name} 
-                      className="w-20 h-20 object-cover rounded-lg border"
-                    />
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg line-clamp-2">{item.name}</h3>
-                      <p className="text-green-600 font-bold text-xl">₹{item.price}</p>
+                  <div key={item.id} className="flex flex-col sm:flex-row items-start gap-4 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                    {/* Square image container */}
+                    <div className="w-24 h-24 sm:w-20 sm:h-20 flex-shrink-0">
+                      <img 
+                        src={item.images[0]} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
                     </div>
                     
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
+                    <div className="flex-1 min-w-0 w-full space-y-2">
+                      <h3 className="font-semibold text-base sm:text-lg line-clamp-2">{item.name}</h3>
                       
-                      <span className="font-semibold text-lg w-8 text-center">{item.quantity}</span>
+                      {/* Price breakdown */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="space-y-1">
+                          <p className="text-gray-600">Unit Price:</p>
+                          <p className="text-gray-600">Quantity:</p>
+                          <p className="text-gray-600">Total:</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-green-600 font-medium">₹{item.price.toFixed(2)}</p>
+                          <p className="font-medium">{item.quantity}</p>
+                          <p className="text-green-600 font-bold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                        </div>
+                      </div>
                       
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="font-bold text-lg text-green-600">₹{item.price * item.quantity}</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onRemoveItem(item.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Quantity controls */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          
+                          <span className="font-semibold text-base w-8 text-center">{item.quantity}</span>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRemoveItem(item.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -297,32 +305,32 @@ const Cart: React.FC<CartPageProps> = ({
           </div>
 
           {/* Order Summary & Checkout */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Order Summary */}
             <Card>
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Order Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span className="font-semibold">₹{subtotal}</span>
+              <CardContent className="space-y-3 p-4 sm:p-6">
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items):</span>
+                  <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm sm:text-base">
                   <span>Delivery Charges:</span>
                   <span className={finalDeliveryCharges === 0 ? 'text-green-600 font-semibold' : 'font-semibold'}>
-                    {finalDeliveryCharges === 0 ? 'FREE' : `₹${finalDeliveryCharges}`}
+                    {finalDeliveryCharges === 0 ? 'FREE' : `₹${finalDeliveryCharges.toFixed(2)}`}
                   </span>
                 </div>
                 {subtotal < freeDeliveryMin && (
-                  <p className="text-sm text-orange-600">
-                    Add ₹{freeDeliveryMin - subtotal} more for free delivery!
+                  <p className="text-xs sm:text-sm text-orange-600">
+                    Add ₹{(freeDeliveryMin - subtotal).toFixed(2)} more for free delivery!
                   </p>
                 )}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-xl font-bold">
+                <div className="border-t pt-3">
+                  <div className="flex justify-between text-lg sm:text-xl font-bold">
                     <span>Total:</span>
-                    <span className="text-green-600">₹{total}</span>
+                    <span className="text-green-600">₹{total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -330,57 +338,61 @@ const Cart: React.FC<CartPageProps> = ({
 
             {/* Customer Details */}
             <Card>
-              <CardHeader>
-                <CardTitle>Delivery Details</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Delivery Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name *</label>
+              <CardContent className="space-y-3 p-4 sm:p-6">
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium">Full Name *</label>
                   <Input
                     value={customerData.name}
                     onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter your full name"
+                    className="text-sm sm:text-base"
                     required
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number *</label>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium">Phone Number *</label>
                   <Input
                     value={customerData.phone}
                     onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="Enter your phone number"
+                    className="text-sm sm:text-base"
                     required
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email (Optional)</label>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium">Email (Optional)</label>
                   <Input
                     type="email"
                     value={customerData.email}
                     onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="Enter your email address"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Delivery Address *</label>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium">Delivery Address *</label>
                   <Textarea
                     value={customerData.address}
                     onChange={(e) => setCustomerData(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="Enter your complete delivery address"
                     rows={3}
+                    className="text-sm sm:text-base"
                     required
                   />
                 </div>
                 
                 <Button
                   onClick={handleBuyNow}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg py-6"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-base sm:text-lg py-5 sm:py-6"
                   size="lg"
                 >
-                  <Phone className="h-5 w-5 mr-2" />
+                  <Phone className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   Buy Now via WhatsApp
                 </Button>
                 
@@ -395,20 +407,22 @@ const Cart: React.FC<CartPageProps> = ({
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[95%] sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg sm:text-xl">Confirm Your Order</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm sm:text-base">
               You'll be redirected to WhatsApp in {countdown} seconds for order confirmation.
               <br /><br />
               Please make sure all your details are correct before proceeding.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelRedirect}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={cancelRedirect} className="text-sm sm:text-base">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={redirectToWhatsApp}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-sm sm:text-base"
             >
               Proceed Now ({countdown})
             </AlertDialogAction>
