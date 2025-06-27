@@ -15,18 +15,15 @@ export const useCategories = () => {
         const headers = getToken() ? { Authorization: `Bearer ${getToken()}` } : {};
         const response = await axios.get(`${API_BASE_URL}/categories`, { headers });
         const data = response.data?.data || response.data;
-        console.log('Raw categories data:', data);
         if (!Array.isArray(data)) {
           console.error('Categories API returned non-array data:', data);
           return [];
         }
-        // Minimal validation: only require _id
         const validCategories = data.filter(
           (category): category is { _id: string; name?: string; description?: string } =>
             !!category && typeof category._id === 'string' && category._id !== 'undefined'
         );
-        console.log('Filtered valid categories:', validCategories);
-        return validCategories;
+       return validCategories;
       } catch (error: any) {
         console.error('Error fetching categories:', {
           message: error.message,
@@ -53,9 +50,7 @@ export const useProducts = (page = 1, limit = 12, categoryFilter = '') => {
           params.append('category', categoryFilter); // Send category ID
         }
         const headers = getToken() ? { Authorization: `Bearer ${getToken()}` } : {};
-        console.log('Fetching products with URL:', `${API_BASE_URL}/products?${params}`); // Log URL
         const response = await axios.get(`${API_BASE_URL}/products?${params}`, { headers });
-        console.log('Raw products API response:', response.data); // Log response
         return response.data;
       } catch (error: any) {
         console.error('Error fetching products:', {
@@ -120,8 +115,7 @@ export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ _id, product }) => {
-      console.log('Updating product with _id:', _id, 'Data:', product); // Log ID and data
-      if (!_id || _id === 'undefined') {
+     if (!_id || _id === 'undefined') {
         throw new Error('Invalid product ID');
       }
       const formData = new FormData();
@@ -153,7 +147,6 @@ export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (_id) => {
-      console.log('Deleting product with _id:', _id); // Log ID
       if (!_id || _id === 'undefined') {
         throw new Error('Invalid product ID');
       }
@@ -176,8 +169,7 @@ export const useToggleStock = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (_id) => {
-      console.log('Toggling stock for product _id:', _id); // Log ID
-      if (!_id || _id === 'undefined') {
+     if (!_id || _id === 'undefined') {
         throw new Error('Invalid product ID');
       }
       const response = await axios.patch(`${API_BASE_URL}/products/${_id}/toggle-stock`, {}, {
@@ -208,7 +200,7 @@ export const useAddCategory = () => {
       // Force refetch by invalidating and removing cache
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.removeQueries({ queryKey: ['categories'] });
-      console.log('Invalidated and removed categories query cache');
+     
     },
     onError: (error: any) => {
       console.error('Error adding category:', error);

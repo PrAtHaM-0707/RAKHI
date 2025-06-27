@@ -96,17 +96,16 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   };
 
   const handleAddToCart = (product: Product) => {
-    console.log("Adding product:", product);
-    onAddToCart({
+   onAddToCart({
       ...product,
-      id: product._id || product.id, // Ensure correct id
+      id: product._id || product.id, 
     });
   };
 
   const handleViewProduct = (product: Product) => {
     setSelectedProduct({
       ...product,
-      id: product._id || product.id, // Normalize id
+      id: product._id || product.id,
     });
     setIsProductModalOpen(true);
   };

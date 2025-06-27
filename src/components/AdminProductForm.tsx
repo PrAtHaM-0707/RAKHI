@@ -59,14 +59,13 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({
   const updateProduct = useUpdateProduct();
 
   useEffect(() => {
-    console.log('Categories in AdminProductForm:', categories); // Log categories
-    console.log('Product in AdminProductForm:', product); // Log product
+   
     if (product) {
       setFormData({
         _id: product._id,
         name: product.name || '',
         price: product.price || 0,
-        images: [], // Reset for new uploads
+        images: [], 
         description: product.description || '',
         category_id: product.category_id ? String(product.category_id) : '',
         stock: product.stock || 0,
@@ -93,7 +92,6 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitting form data:', formData); // Log form data
     if (!formData.name || !formData.price || !formData.category_id) {
       toast({
         title: 'Validation Error',

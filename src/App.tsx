@@ -36,9 +36,7 @@ const App = () => {
     }
   }, []);
 
-  // Save cart to localStorage and log for debugging
   useEffect(() => {
-    console.log("Cart Items:", cartItems);
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 

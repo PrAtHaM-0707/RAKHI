@@ -54,9 +54,7 @@ const Admin = () => {
   const updateSettings = useUpdateSettings();
   const adminLogin = useAdminLogin();
 
-  console.log('Categories in Admin:', categories);
-  console.log('Products in Admin:', productsData);
-
+ 
   useEffect(() => {
     if (siteSettings) {
       setSettings({
@@ -93,7 +91,6 @@ const Admin = () => {
   };
 
   const handleDeleteProduct = async (_id: string) => {
-    console.log('Attempting to delete product:', _id);
     if (!_id || _id === 'undefined') {
       toast({
         title: 'Error',
@@ -117,7 +114,7 @@ const Admin = () => {
   };
 
   const handleToggleStock = async (_id: string, is_out_of_stock: boolean) => {
-    console.log('Attempting to toggle stock for product:', _id);
+  ;
     if (!_id || _id === 'undefined') {
       toast({
         title: 'Error',

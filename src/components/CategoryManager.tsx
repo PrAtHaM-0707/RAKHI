@@ -27,7 +27,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ categories = [] }) =>
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
 
-  console.log('Categories in CategoryManager:', categories); // Log categories prop
+
 
   const handleAddCategory = async () => {
     if (!newCategory.name.trim()) {
