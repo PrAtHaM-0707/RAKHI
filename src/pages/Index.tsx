@@ -343,7 +343,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
           </div>
           
           <div className="border-t border-orange-400 mt-8 pt-4 text-center">
-            <p className="text-orange-100">© 2024 RakhiMart. All rights reserved.</p>
+            <p className="text-orange-100">© 2025 RakhiMart. All rights reserved.</p>
           </div>
         </div>
       </footer>
