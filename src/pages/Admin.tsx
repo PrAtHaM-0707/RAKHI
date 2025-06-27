@@ -18,7 +18,7 @@ interface Product {
   images: string[];
   description: string;
   category_id: string;
-  category_name?: string; // Added for display
+  category_name?: string; 
   stock: number;
   is_out_of_stock: boolean;
   specifications: string[];

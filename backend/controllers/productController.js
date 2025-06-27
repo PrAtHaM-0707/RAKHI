@@ -23,7 +23,7 @@ exports.getProducts = async (req, res) => {
     res.json({
       products: products.map(p => ({
         ...p,
-        categories: { name: p.category_id?.name || '' },
+        category_name: p.category_id?.name || '', 
         category_id: p.category_id?._id.toString(),
       })),
       count,
@@ -68,7 +68,7 @@ exports.createProduct = async (req, res) => {
     const populatedProduct = await Product.findById(product._id).populate('category_id', 'name').lean();
     res.status(201).json({
       ...populatedProduct,
-      categories: { name: populatedProduct.category_id?.name || '' },
+      category_name: populatedProduct.category_id?.name || '', 
       category_id: populatedProduct.category_id?._id.toString(),
     });
   } catch (error) {
@@ -109,7 +109,7 @@ exports.updateProduct = async (req, res) => {
     const populatedProduct = await Product.findById(id).populate('category_id', 'name').lean();
     res.json({
       ...populatedProduct,
-      categories: { name: populatedProduct.category_id?.name || '' },
+      category_name: populatedProduct.category_id?.name || '', 
       category_id: populatedProduct.category_id?._id.toString(),
     });
   } catch (error) {
@@ -142,7 +142,7 @@ exports.toggleStock = async (req, res) => {
     const populatedProduct = await Product.findById(id).populate('category_id', 'name').lean();
     res.json({
       ...populatedProduct,
-      categories: { name: populatedProduct.category_id?.name || '' },
+      category_name: populatedProduct.category_id?.name || '', 
       category_id: populatedProduct.category_id?._id.toString(),
     });
   } catch (error) {
