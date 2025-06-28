@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Filter states
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -67,13 +68,20 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   const productsPerPage = 12;
 
   // Fetch data
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: productsData, isLoading: productsLoading } = useProducts(
     currentPage,
     productsPerPage,
     selectedCategory
   );
-  const { data: siteSettingsData } = useSiteSettings();
+  const { data: siteSettingsData, isLoading: settingsLoading } = useSiteSettings();
+
+  useEffect(() => {
+    // Check if all data has finished loading
+    if (!categoriesLoading && !productsLoading && !settingsLoading) {
+      setIsInitialLoading(false);
+    }
+  }, [categoriesLoading, productsLoading, settingsLoading]);
 
   const siteSettings = siteSettingsData || defaultSiteSettings;
 
@@ -96,7 +104,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
   };
 
   const handleAddToCart = (product: Product) => {
-   onAddToCart({
+    onAddToCart({
       ...product,
       id: product._id || product.id, 
     });
@@ -151,7 +159,27 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
-      <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b-2 border-orange-200 sticky top-0 z-50">
+      {/* Loading overlay */}
+      {isInitialLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm">
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              {/* Animated rakhi icon */}
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
+                <span className="text-white font-bold text-xl">R</span>
+              </div>
+              
+              {/* Rotating border animation */}
+              <div className="absolute inset-0 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            
+            <p className="mt-4 text-orange-600 font-medium">Loading RakhiMart...</p>
+            <p className="text-sm text-orange-500 mt-2">Preparing something special for you</p>
+          </div>
+        </div>
+      )}
+
+      <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b-2 border-orange-200 sticky top-0 z-40">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center space-x-3">
@@ -159,7 +187,7 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
                 <span className="text-white font-bold text-lg md:text-xl">R</span>
               </div>
               <div>
-                <h1 className="text-lg md:text-xl600 font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                   {siteSettings.site_title || "RakhiMart"}
                 </h1>
                 <p className="text-xs text-gray-500 hidden md:block">
@@ -358,17 +386,27 @@ const Index: React.FC<IndexProps> = ({ cartItems, onAddToCart }) => {
 
             <div>
               <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <a href="#" className="block hover:text-orange-200 transition-colors">
-                  About Us
-                </a>
-                <a href="#" className="block hover:text-orange-200 transition-colors">
-                  Shipping Policy
-                </a>
-                <a href="#" className="block hover:text-orange-200 transition-colors">
-                  Return Policy
-                </a>
-              </div>
+              
+<div className="space-y-2">
+  <a 
+    onClick={() => navigate("/about")} 
+    className="block hover:text-orange-200 transition-colors cursor-pointer"
+  >
+    About Us
+  </a>
+  <a 
+    onClick={() => navigate("/shipping-policy")} 
+    className="block hover:text-orange-200 transition-colors cursor-pointer"
+  >
+    Shipping Policy
+  </a>
+  <a 
+    onClick={() => navigate("/return-policy")} 
+    className="block hover:text-orange-200 transition-colors cursor-pointer"
+  >
+    Return Policy
+  </a>
+</div>
             </div>
 
             <div>

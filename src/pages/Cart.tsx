@@ -47,6 +47,7 @@ const Cart: React.FC<CartPageProps> = ({
   });
   const [showConfirmation, setShowConfirmation] = React.useState(false);
   const [countdown, setCountdown] = React.useState(5);
+  const [isProceedEnabled, setIsProceedEnabled] = React.useState(false);
   const countdownRef = React.useRef<NodeJS.Timeout>();
 
   const deliveryCharges = 50;
@@ -54,6 +55,14 @@ const Cart: React.FC<CartPageProps> = ({
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const finalDeliveryCharges = subtotal >= freeDeliveryMin ? 0 : deliveryCharges;
   const total = subtotal + finalDeliveryCharges;
+
+  React.useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity === 0) {
@@ -114,12 +123,13 @@ const Cart: React.FC<CartPageProps> = ({
   const startCountdown = () => {
     setShowConfirmation(true);
     setCountdown(5);
+    setIsProceedEnabled(false);
     
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(countdownRef.current);
-          redirectToWhatsApp();
+          setIsProceedEnabled(true);
           return 0;
         }
         return prev - 1;
@@ -130,11 +140,13 @@ const Cart: React.FC<CartPageProps> = ({
   const cancelRedirect = () => {
     clearInterval(countdownRef.current);
     setShowConfirmation(false);
+    setIsProceedEnabled(false);
   };
 
   const redirectToWhatsApp = () => {
     clearInterval(countdownRef.current);
     setShowConfirmation(false);
+    setIsProceedEnabled(false);
     
     const whatsappURL = generateWhatsAppURL();
     onClearCart();
@@ -168,7 +180,7 @@ const Cart: React.FC<CartPageProps> = ({
     startCountdown();
   };
 
-   if (cartItems.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 py-8">
         <div className="container mx-auto px-4">
@@ -353,16 +365,26 @@ const Cart: React.FC<CartPageProps> = ({
                   />
                 </div>
                 
-                <div className="space-y-1">
-                  <label className="text-xs sm:text-sm font-medium">Phone Number *</label>
-                  <Input
-                    value={customerData.phone}
-                    onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Enter your phone number"
-                    className="text-sm sm:text-base"
-                    required
-                  />
-                </div>
+                  <div className="space-y-1">
+      <label className="text-xs sm:text-sm font-medium">Phone Number *</label>
+      <div className="flex items-center">
+        <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+          +91
+        </span>
+        <Input
+          value={customerData.phone}
+          onChange={(e) => {
+            const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+            setCustomerData({ phone: value });
+          }}
+          placeholder="Enter your 10-digit mobile number"
+          className="text-sm sm:text-base rounded-l-none"
+          required
+          type="tel"
+          maxLength={10}
+        />
+      </div>
+    </div>
                 
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium">Email (Optional)</label>
@@ -410,8 +432,8 @@ const Cart: React.FC<CartPageProps> = ({
         <AlertDialogContent className="max-w-[95%] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg sm:text-xl">Confirm Your Order</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base">
-              You'll be redirected to WhatsApp in {countdown} seconds for order confirmation.
+            <AlertDialogDescription className="text-sm sm:text-base" aria-live="polite">
+              The Proceed button will be enabled in {countdown} seconds.
               <br /><br />
               Please make sure all your details are correct before proceeding.
             </AlertDialogDescription>
@@ -422,9 +444,10 @@ const Cart: React.FC<CartPageProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={redirectToWhatsApp}
+              disabled={!isProceedEnabled}
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-sm sm:text-base"
             >
-              Proceed Now ({countdown})
+              Proceed Now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

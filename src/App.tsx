@@ -9,6 +9,9 @@ import Admin from "./pages/Admin";
 import Cart from "./pages/Cart";
 import NotFound from "./pages/NotFound";
 import { toast } from "@/hooks/use-toast";
+import AboutPage from "./pages/AboutPage";
+import ShippingPolicyPage from "./pages/ShippingPolicyPage";
+import ReturnPolicyPage from "./pages/ReturnPolicyPage";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +139,9 @@ const App = () => {
               }
             />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+            <Route path="/return-policy" element={<ReturnPolicyPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
